@@ -76,6 +76,7 @@ Returns nothing.
 
 #### rstar:draw([only_boxes])
 
+This method will work only if the script runs in [LOVE2D](https://love2d.org/) framework.
 This is a debug method: draws tree's structure (for now only if its height is <= 5). Each level is drawn with a different color, while boxes are drawn in white.
 When `only_boxes` is set to false, this method won't draw internal nodes.
 
