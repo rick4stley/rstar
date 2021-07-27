@@ -157,7 +157,7 @@ function rstar.new(settings) -- creates a new instance of r* tree
     local result = {
         -- default parameters, based on best-values showed in the paper
         -- note: you should provide this on creation, and never set them manually
-        m = 8, -- minimum number of chilren per node (40% of M) [1;M/2]
+        m = 8, -- minimum number of chilren per node (40% of M) [2;M/2]
         M = 20, -- maximum number of children per node
         reinsert_p = 6, -- how many nodes to reinsert on overflow (30% of M) [1;M)
         reinsert_method = 1, -- 1) distance-to-center 2) distance-to-center of mass (see distanceSort)
@@ -193,6 +193,8 @@ function rstar.new(settings) -- creates a new instance of r* tree
 
         if type(settings.choice_p) == 'number' then
             result.choice_p = math.min(math.floor(settings.choice_p), result.M)
+        else
+            result.choice_p = result.M
         end
     end
 
@@ -411,7 +413,7 @@ local function chooseLeaf(p, node, inserting, auxbox) -- choose the best leaf no
     -- then for the first p leaves (or all when p > #children), calculates how much overlap with other leaves would gain if choosen
     -- for insertion, if there's a match on said value wins who arrived first.
     -- this would be a quadratic cost algorithm, but with p it can be sped up in exchange of accuracy.
-    -- note: in the paper 32 is the raccomended value for p, meaning that M ~ 107 (that's pretty huge)
+    -- note: in the paper 32 is the raccomended value for p.
     -- return the chosen leaf's position in node.children
     local a = {}
     local children = node.children
@@ -612,9 +614,9 @@ local lc = {
     {0,0,1,0.5}
 }
 
-function rstar:draw(only_leaves) -- debug method, draws a tree with a max height of 6
+function rstar:draw(only_boxes) -- debug method, draws a tree with a max height of 5
     -- visits the tree by level drawing the whole structure with different colors.
-    -- allows to draw just leaves
+    -- allows to draw just boxes
     if self.root then
         local lg = love.graphics
         local traverse = { self.root }
@@ -633,7 +635,7 @@ function rstar:draw(only_leaves) -- debug method, draws a tree with a max height
                 nextlevel = 0
             end
 
-            if not only_leaves then
+            if only_boxes == false then
                 lg.setColor(lc[level])
                 lg.rectangle('line', aabb.viewport(first.box))
             end
