@@ -2,7 +2,7 @@
 R* Tree implementation in Lua
 ## Description
 A [R* Tree](https://infolab.usc.edu/csci599/Fall2001/paper/rstar-tree.pdf) (pronounced r star tree) is a data structure which is meant to store n-dimensional boxes, in a way that makes queries, like range searches, very efficient.
-This is a variant of the [R-Tree](http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf): the key difference is that R* Trees optimize their structure over time. As items are inserted or deleted, this tree will get more robust and nodes will overlap the least.
+This is a variant of the [R-Tree](http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf): the key difference is that R* Tree optimizes its structure over time. As items are inserted or deleted, this tree will get more robust and nodes will overlap less.
 This implementation in particular works with *2D AABBs (Axis-Aligned Bounding-Boxes)*.
 
 ### What's this good for?
@@ -24,4 +24,21 @@ rstar = require "rstar"
 
 #### rstar.new(settings)
 
-Creates a new instance of R* Tree, getting the table settings as argument
+Creates a new instance of R* Tree, using a table of `settings` as argument.
+Here's the list of `settings`' valid fields:
+* `M` the maximum number of children per node; must be a integer number >= than 4. The default value is 20.
+* `m` the minimum number of children per node; must be a integer number >= than 2 and <= than M/2. The default value is 8 (40% of M).
+* `reinsert_p` the number of children to reinsert when their quantity exeeds M; must be a integer number >= than 1 and < than M. The default value is 6 (30% of M).
+* `reinsert_method` the method used to decide which `reinsert_p` children should be reinserted; `'weighted'` uses the medium point of all children, and `'normal'` uses the node's center instead. The default value is `'normal'`
+* `choice_p`
+
+#### rstar:insert(item)
+
+#### rstar:delete(id)
+
+#### rstar:search(s, result)
+
+#### rstar:select(p, result)
+
+#### rstar:draw([only_leaves])
+
