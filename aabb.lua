@@ -27,7 +27,7 @@
 local aabb = {}
 
 function aabb.new(x, y, w, h)
-    return result = {
+    return {
         x = x or 0,
         y = y or 0,
         w = w or 1,
