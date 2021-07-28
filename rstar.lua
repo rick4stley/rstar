@@ -52,6 +52,7 @@
 ]]
 
 local aabb = require 'aabb'
+local CAN_DRAW = (love ~= nil and select(2, love.getVersion()) >= 7)
 
 local rsnode = {}
 rsnode.__index = rsnode
@@ -536,6 +537,8 @@ function rstar:delete(id) -- deletion method
         if n:isUnderfilled(self) then
             local nr = p:removeNode(n.id)
             table.insert(q, {lc, nr})
+        else
+            aabb.set(p.box, aabb.mbr(p.children))
         end
 
         lc = lc + 1
@@ -617,7 +620,8 @@ local lc = {
 function rstar:draw(only_boxes) -- debug method, draws a tree with a max height of 5
     -- visits the tree by level drawing the whole structure with different colors.
     -- allows to draw just boxes
-    if self.root then
+    -- this method is meant to be used in LOVE2D framework
+    if CAN_DRAW and self.root then
         local lg = love.graphics
         local traverse = { self.root }
         local thislevel = 1
