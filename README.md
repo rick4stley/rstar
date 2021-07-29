@@ -82,3 +82,7 @@ When `only_boxes` is set to false, this method won't draw internal nodes.
 
 Returns nothing.
 
+## Planned features
+- Bulk loading
+- Nearest-neighbor search
+- Circular range-area search
