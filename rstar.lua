@@ -626,7 +626,7 @@ function rstar:draw(only_boxes) -- debug method, draws a tree with a max height 
     -- visits the tree by level drawing the whole structure with different colors.
     -- allows to draw just boxes
     -- this method is meant to be used in LOVE2D framework
-    if CAN_DRAW and self.root then
+    if CAN_DRAW and self.root and self.height <= 5 then
         local lg = love.graphics
         local traverse = { self.root }
         local thislevel = 1
