@@ -1,4 +1,6 @@
 --[[
+    R*Tree 1.0
+
     IMPORTANT! READ:
     This Lua module is a implementation of the data structure R*Tree.
     This structure is a variant of the R-Tree, originally proposed by A. Guttman.
