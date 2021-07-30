@@ -52,7 +52,12 @@
 ]]
 
 local aabb = require 'aabb'
-local CAN_DRAW = (love ~= nil and select(2, love.getVersion()) >= 7)
+local CAN_DRAW = love ~= nil
+if CAN_DRAW then
+    if love.getVersion == nil then
+        CAN_DRAW = love._version_minor ~= nil and love._version_minor >= 7
+    end
+end
 
 local rsnode = {}
 rsnode.__index = rsnode
