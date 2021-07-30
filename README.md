@@ -12,7 +12,7 @@ This implementation in particular works with *2D AABBs (Axis-Aligned Bounding-Bo
   
   :heavy_check_mark: Drawing applications: selection of shapes is vary fast (with single clicks and selection areas as well)
   
-  :heavy_check_mark: Game developement: store obstacles with a wide range of sizes to detect collisions
+  :heavy_check_mark: Game developement: store obstacles with a wide range of sizes to detect collisions and speed up raycasting
 
 ## How to use
 At the top of your main script, require [rstar.lua](rstar.lua) as follows:
