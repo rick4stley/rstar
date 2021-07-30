@@ -85,4 +85,4 @@ Returns nothing.
 ## Planned features
 - Bulk loading
 - Nearest-neighbor search
-- Circular range-area search
+- Circular area range-search
