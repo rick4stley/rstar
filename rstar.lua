@@ -53,7 +53,7 @@
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-local aabb = require 'aabb11'
+local aabb = require 'aabb'
 local CAN_DRAW = love ~= nil
 if CAN_DRAW then
     if love.getVersion == nil then
