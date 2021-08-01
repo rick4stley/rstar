@@ -1,6 +1,6 @@
 --[[
     R*Tree 1.0
-
+    
     IMPORTANT! READ:
     This Lua module is a implementation of the data structure R*Tree.
     This structure is a variant of the R-Tree, originally proposed by A. Guttman.
@@ -53,7 +53,7 @@
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-local aabb = require 'aabb'
+local aabb = require 'aabb11'
 local CAN_DRAW = love ~= nil
 if CAN_DRAW then
     if love.getVersion == nil then
@@ -115,13 +115,18 @@ function rsnode:add(tree, child)
     end
 end
 
+function rsnode:find(id)
+    local found, i = false, 0
+    while (not found) and i <= #self.children do
+        i = i + 1
+        found = self.children[i].id == id
+    end
+    return found, i
+end
+
 function rsnode:remove(tree, entry_id) -- removes a entry (only for leaves)
     if self.is_leaf then
-        local i, found = 0, false
-        while (not found) and i <= #self.children do
-            i = i + 1
-            found = self.children[i].id == entry_id
-        end
+        local found, i = self:find(entry_id)
         if found then 
             local entry = table.remove(self.children, i)
             tree.entries[entry.id] = nil
@@ -135,11 +140,7 @@ end
 
 function rsnode:removeNode(node_id) -- removes a child (only for branches)
     if not self.is_leaf then
-        local i, found = 0, false
-        while (not found) and i <= #self.children do
-            i = i + 1
-            found = self.children[i].id == node_id
-        end
+        local found, i = self:find(node_id)
         if found then 
             local node = table.remove(self.children, i)
             aabb.set(self.box, aabb.mbr(self.children))
@@ -503,6 +504,179 @@ insert = function(tree, node, level) -- inserts any kind of item in the tree
     end
 end
 
+local function pickLeaf(tree, s) -- helper function for nearest
+    -- for a arbitrary search box s, finds the best leaf node to run the first
+    -- step of nearest-neighbor search.
+    -- the function descends the tree, performing intersections like the search method.
+    -- if the set of intersections for the current node is empty,
+    -- picks the closest children to s and goes on with this method for the next levels.
+    -- if more than one leaf is found, the one with highest overlap value for s is chosen.
+    -- returns the chosen leaf node.
+    local l -- chosen leaf
+
+    if tree.root.is_leaf then
+        l = tree.root
+    else
+        local traverse = { tree.root }
+        local last_intersected = aabb.intersects(s, tree.root.box) -- break-point between intersection and distance testing
+
+        while not traverse[1].is_leaf do -- iterate unitl leaf level is reached
+            local first = table.remove(traverse, 1)
+
+            if last_intersected then -- do not perform intersections when they can not happen
+                for i = 1, #first.children do
+                    if aabb.intersects(s, first.children[i].box) then
+                        table.insert(traverse, first.children[i])
+                    end
+                end
+            end
+
+            if #traverse == 0 then -- switch to distance testing
+                local min_distance, closer
+                local cx, cy = aabb.center(s)
+
+                for i = 1, #first.children do -- min distance computation loop
+                    local ccx, ccy = aabb.center(first.children[i].box)
+                    local dx, dy = ccx - cx, ccy - cy
+                    local dist = math.sqrt(dx * dx, dy * dy)
+                    if i == 1 or dist < min_distance then
+                        min_distance = dist
+                        closer = i
+                    end
+                end
+
+                last_intersected = false
+                table.insert(traverse, first.children[closer])
+            end
+        end
+
+        l = traverse[1] -- in case there is just one leaf
+
+        if #traverse > 1 then -- pick best from multiple leaves 
+            local max_overlap
+            local chosen
+            for i = 1, #traverse do -- min overlap computation loop
+                local overlap = aabb.overlapArea(s, traverse[i].box)
+                if i == 1 or overlap > max_overlap then
+                    max_overlap = overlap
+                    chosen = i
+                end
+            end
+            l = traverse[chosen]
+        end
+    end
+
+    return l
+end
+
+local function distance(x, y, z, w) -- calculates distance between points (x,y) and (z,w)
+    local dx, dy = z - x, w - y
+    if dx == 0 or dy == 0 then -- avoid square root when possible
+        return math.max(math.abs(dx), math.abs(dy))
+    else
+        return math.sqrt(dx * dx + dy * dy)
+    end
+end
+
+local function findNearestNeighbor(tree, s, leaf, empty) -- finds the nearest entry to s
+    -- this method is divided into two phases, the first finds the local nearest neighbor,
+    -- while the second finds the global one
+    -- to determine the nearness of two boxes, aabb.overlap ability to retrieve distance in each axis is exploited. 
+    -- when the signs of x-overlap (ox) and y-overlap (oy) are different, means that distance
+    -- is given by the one with positive sign.
+    -- when ox and oy are both positive, squared distance is used.
+    -- lastly if ox and oy are both negative, there is a full intersection which is treated as 0 distance.
+    -- in this case, the compared boxes might be one inside the other: the default behaviour is to consider
+    -- them 3d, as one is lying on top of the other, meaning they're sticked together (distance = 0).
+    -- when empty is set to true, they're considered like a table in a room, and the distance is calculated
+    -- from "the table to the walls".
+    -- the second phase consists in the creation of a search box, enlarging s by the distance from the local nearest;
+    -- performing a search query to check if there are potentially nearer entries, and running the same loop on those.
+    -- returns the nearest entry.
+    local min_dist, chosen
+    local first = true
+
+    for i = 1, #leaf.children do -- local n-n loop
+        local current = leaf.children[i]
+
+        if min_dist ~= 0 and current.id ~= s.id then -- do not test a entry with itself
+            local ox, oy = aabb.overlap(s.box, current.box)
+            local d
+
+            if ox < 0 and oy >= 0 then
+                d = oy
+            elseif oy < 0 and ox >= 0 then
+                d = ox
+            elseif ox < 0 and oy < 0 then
+                d = 0 -- default behaviour
+                
+                if empty then
+                    -- treat simple intersection differently from full containment
+                    local containment = (ox == -s.box.w and oy == -s.box.h) or (ox == -current.box.w and oy == -current.box.h)
+
+                    if containment then
+                        local dx = math.min(math.abs((current.box.x + current.box.w) - (s.box.x + s.box.w)), math.abs(current.box.x - s.box.x))
+                        local dy = math.min(math.abs((current.box.y + current.box.h) - (s.box.y + s.box.h)), math.abs(current.box.y - s.box.y))
+                        d = math.min(dx, dy)
+                    end
+                end
+            else
+                d = distance(0, 0, ox, oy)
+            end
+
+            if first or d < min_dist then
+                min_dist = d
+                chosen = current
+            end
+            first = false
+        end
+    end
+
+    if min_dist > 0 then -- skip global testing if neighbor was found
+        -- search box
+        local sbox = { x = s.box.x - min_dist, y = s.box.y - min_dist, w = s.box.w + 2 * min_dist, h = s.box.h + 2 * min_dist }
+        local result = {}
+        tree:search(sbox, result)
+
+        for i = 1, #result do -- global n-n loop
+            local current = result[i]
+
+            if min_dist ~= 0 and current.id ~= s.id and tree.entries[current.id].id ~= leaf.id then -- do not test entries from leaf again
+                local ox, oy = aabb.overlap(s.box, current.box)
+                local d
+
+                if ox < 0 and oy >= 0 then
+                    d = oy
+                elseif oy < 0 and ox >= 0 then
+                    d = ox
+                elseif ox < 0 and oy < 0 then
+                    d = 0 -- default behaviour
+                
+                    if empty then
+                        -- treat simple intersection differently from full containment
+                        local containment = (ox == -s.box.w and oy == -s.box.h) or (ox == -current.box.w and oy == -current.box.h)
+
+                        if containment then
+                            local dx = math.min(math.abs((current.box.x + current.box.w) - (s.box.x + s.box.w)), math.abs(current.box.x - s.box.x))
+                            local dy = math.min(math.abs((current.box.y + current.box.h) - (s.box.y + s.box.h)), math.abs(current.box.y - s.box.y))
+                            d = math.min(dx, dy)
+                        end
+                    end
+                else
+                    d = distance(0, 0, ox, oy)
+                end
+
+                if d < min_dist then
+                    min_dist = d
+                    chosen = current
+                end
+            end
+        end
+    end
+
+    return chosen
+end
+
 function rstar:insert(item) -- insertion method
     -- create a new entry table {id, box}, and if the tree is empty create root;
     -- else call insert with this tree, the new entry and leaf level.
@@ -616,6 +790,41 @@ function rstar:select(p, result) -- selection method
     end
 end
 
+function rstar:range(c, result) -- range search method
+    -- collects all entries which intersect with the circle c, and puts them in the table result
+    if self.root then
+        local traverse = { self.root }
+
+        while #traverse > 0 do
+            local first = table.remove(traverse, 1)
+
+            for i = 1, #first.children do
+                if aabb.inrange(first.children[i].box, c.x, c.y, c.r) then
+                    table.insert(first.is_leaf and result or traverse, first.children[i])
+                end
+            end
+        end
+    end
+end
+
+function rstar:nearest(s, empty) -- nearest neighbor searching method
+    -- finds the nearest entry in the tree, to the argument s
+    -- s can be a numeric id owned by a entry in the tree, or a arbitrary box.
+    -- arbitrary boxes are treated differently as they're not granted to lie in
+    -- a leaf node, thus pickLeaf is in charge to choose a appropriate one
+    -- empty specifies how to treat boxes: true means empty boxes, default is filled
+    if self.root and #self.root.children >= 2 then
+        if type(s) == 'number' then
+            if self.entries[s] == nil then return end
+            local l = self.entries[s]
+            return findNearestNeighbor(self, l.children[select(2, l:find(s))], l, empty)
+        else
+            local l = pickLeaf(self, s)
+            return findNearestNeighbor(self, {box = s, id = -2}, l, empty)
+        end
+    end
+end
+
 local lc = {
     {1,0,0,0.5},
     {0,1,1,0.5},
@@ -624,11 +833,11 @@ local lc = {
     {0,0,1,0.5}
 }
 
-function rstar:draw(only_boxes) -- debug method, draws a tree with a max height of 5
+function rstar:draw(draw_boxes, draw_nodes) -- debug method, draws a tree with a max height of 5
     -- visits the tree by level drawing the whole structure with different colors.
-    -- allows to draw just boxes
+    -- allows to disable boxes drawing or nodes drawing.
     -- this method is meant to be used in LOVE2D framework
-    if CAN_DRAW and self.root and self.height <= 5 then
+    if CAN_DRAW and self.root and self.height <= 5 and (draw_boxes ~= false or draw_nodes ~= false) then
         local lg = love.graphics
         local traverse = { self.root }
         local thislevel = 1
@@ -646,16 +855,18 @@ function rstar:draw(only_boxes) -- debug method, draws a tree with a max height 
                 nextlevel = 0
             end
 
-            if only_boxes == false then
+            if draw_nodes ~= false then
                 lg.setColor(lc[level])
                 lg.rectangle('line', aabb.viewport(first.box))
             end
 
             if first.is_leaf then
-                lg.setColor(1,1,1)
+                if draw_boxes ~= false then
+                    lg.setColor(1,1,1,0.5)
 
-                for i = 1, #first.children do
-                    lg.rectangle('line', aabb.viewport(first.children[i].box))
+                    for i = 1, #first.children do
+                        lg.rectangle('line', aabb.viewport(first.children[i].box))
+                    end
                 end
             else
                 for i = 1, #first.children do
