@@ -1,4 +1,4 @@
--- This module works with Axis-Aligned Bounding-Boxes
+-- This module works with Axis-Aligned Bounding-Boxes v1.0
 --[[
     MIT LICENSE
 
@@ -22,7 +22,7 @@
     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-]]
+]]--
 
 local aabb = {}
 
@@ -127,7 +127,7 @@ end
 function aabb:intersects(other)
     local ow, oh = aabb.size(other)
     local ox, oy = aabb.overlap(self, other)
-    local contains = ox == -ow and oy == -oh
+    local contains = (ox == -ow and oy == -oh) and 1 or ((ox == -self.w and oy == -self.h) and -1 or 0)
 
     return ox < 0 and oy < 0, contains
 end
@@ -135,6 +135,28 @@ end
 function aabb:inside(x, y)
     return x >= self.x and x < self.x + self.w and y >= self.y and y < self.y + self.h
 end
+
+local function distance(x, y, z, w)
+    local dx, dy = z - x, w - y
+    if dx == 0 or dy == 0 then 
+        return math.max(math.abs(dx), math.abs(dy))
+    else
+        return math.sqrt(dx * dx + dy * dy)
+    end
+end
+
+local function clamp(value, min, max)
+    return value < max and (value > min and value or min) or max
+end
+
+function aabb:inrange(cx, cy, cr)
+    local clx, cly = clamp(cx, self.x, self.x + self.w), clamp(cy, self.y, self.y + self.h)
+
+    local d = distance(cx, cy, clx, cly)
+
+    return d <= cr
+end
+
 
 --[[ How to draw the overlap region
 love.graphics.rectangle('line',a2:viewport())
