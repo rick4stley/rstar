@@ -46,7 +46,7 @@ Returns the box, or nil if id was not found.
 
 #### rstar:search(s, result)
 
-Collects all boxes which intersect with the search box `s` (which should respect the structure showed in `insert`), and inserts them in the table result.
+Collects all boxes which intersect the search box `s` (which should respect the structure showed in `insert`), and inserts them in the table result.
 Note: the function does not clear the table.
 
 Returns nothing.
@@ -65,15 +65,38 @@ Note: the function does not clear the table.
 
 Returns nothing.
 
-#### rstar:draw([only_boxes])
+#### rstar:range(s, result)
+
+Collects all boxes which intersect the circle `c`, and inserts them in the table result.
+`c` should look like this:
+```lua
+  c = {
+    x = 20, -- center x coordinate
+    y = 15, -- center y coordinate
+    r = 30, -- radius length
+  }
+```
+Note: the function does not clear the table.
+
+Returns nothing.
+
+#### rstar:nearest(s[, empty])
+
+Finds the nearest entry to the argument `s`, which can be a numeric id owned by a entry in the tree or an arbitrary box object.
+`empty` tells the algorithm wheter to treat rectangles as empty or filled(default): they differ in the way they treat `s` being enclosed in a entry.
+Filled means that boxes are considered solid rectangles, and enclosed boxes stick on top of their container like a book on a table, meaning they are distant 0.
+Instead, empty treates boxes as outlines more like a table in a room: the distance between `s` and container's "walls" is chosen.
+This first method will give a unexpected result in a scenario where a entry contains both `s` and other entries.
+
+Returns the nearest entry to `s`.
+
+#### rstar:draw([draw_boxes, draw_nodes])
 
 This method will work only if the script runs in [LOVE2D](https://love2d.org/) framework v.0.7.0 and higher.
 This is a debug method: draws tree's structure (for now only if its height is <= 5). Each level is drawn with a different color, while boxes are drawn in white.
-When `only_boxes` is set to false, this method won't draw internal nodes.
+`draw_boxes` and `draw_nodes` respectively disable entries and nodes drawing when they're set to `false`.
 
 Returns nothing.
 
 ## Planned features
 - Bulk loading
-- Nearest-neighbor search
-- Circular area range-search
