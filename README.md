@@ -84,8 +84,8 @@ Returns nothing.
 
 Finds the nearest entry to the argument `s`, which can be a numeric id owned by a entry in the tree or an arbitrary box object.
 `empty` tells the algorithm wheter to treat rectangles as empty or filled(default): they differ in the way they treat `s` being enclosed in a entry.
-Filled means that boxes are considered solid rectangles, and enclosed boxes stick on top of their container like a book on a table, meaning they are distant 0.
-Instead, empty treates boxes as outlines more like a table in a room: the distance between `s` and container's "walls" is chosen.
+`empty=false` means that boxes are considered solid rectangles, and enclosed boxes stick on top of their container like a book on a table, meaning they are distant 0.
+Instead, `empty=true` treates boxes as outlines more like a table in a room: the distance between `s` and container's "walls" is chosen.
 This first method will give a unexpected result in a scenario where a entry contains both `s` and other entries.
 
 Returns the nearest entry to `s`.
