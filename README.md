@@ -1,5 +1,7 @@
 # rstar
 R* Tree implementation in Lua
+
+#### Now with a demo!
 ## Description
 A [R* Tree](https://infolab.usc.edu/csci599/Fall2001/paper/rstar-tree.pdf) (pronounced r star tree) is a data structure which is meant to store n-dimensional boxes, in a way that makes queries, like range searches, very efficient.
 This is a variant of the [R-Tree](http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf): the key difference is that R* Tree optimizes its structure over time. As items are inserted or deleted, this tree will get more robust and nodes will overlap less.
