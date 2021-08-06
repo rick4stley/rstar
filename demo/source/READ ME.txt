@@ -1,0 +1,26 @@
+Hello, this is Tanks - rstar demo, by Rick Astley
+
+GitHub: https://github.com/rick4stley/rstar
+Love: https://love2d.org/wiki/rstar
+
+To show some example usages of this library, I made
+this little game where you move around in a tank.
+The space around you will be filled with a thousand
+random boxes, which are the protagonists of the demo.
+You can interact with them by colliding and shooting a
+bullet on them.
+While you have fun roaming around, the game will prompt
+on screen some interesting informations:
+
+ - The current number of boxes
+ - The number of boxes actually checked for collision detection,
+   last time the tank moved
+ - The number of boxes being drawn
+ - The number of boxes tested to display the target icon, using
+   raycasting
+ - The number of intersections performed on average by the tree
+   in collision detection queries. Includes internal nodes
+ - Same as above but to retrieve boxes visible on screen.
+
+Hope you'll like this,
+~Rick Astley
